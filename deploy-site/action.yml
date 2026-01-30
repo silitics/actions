@@ -1,0 +1,78 @@
+name: Deploy Static Site
+description: Deploy a static site to S3-compatible storage for hosting
+
+inputs:
+  domain:
+    description: Domain name for the site (e.g., docs.silitics.com)
+    required: true
+  source-dir:
+    description: Directory containing the built site
+    required: false
+    default: dist
+  s3-bucket:
+    description: S3 bucket name
+    required: false
+    default: silitics-public-sites
+  s3-endpoint:
+    description: S3 endpoint URL
+    required: false
+    default: https://nbg1.your-objectstorage.com
+  s3-access-key:
+    description: S3 access key
+    required: true
+  s3-secret-key:
+    description: S3 secret key
+    required: true
+
+outputs:
+  version:
+    description: Deployed version identifier
+    value: ${{ steps.deploy.outputs.version }}
+  archive:
+    description: Archive filename
+    value: ${{ steps.deploy.outputs.archive }}
+
+runs:
+  using: composite
+  steps:
+    - name: Deploy to S3
+      id: deploy
+      shell: bash
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.s3-access-key }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.s3-secret-key }}
+      run: |
+        set -euo pipefail
+
+        VERSION="v$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}"
+        ARCHIVE="${VERSION}.tar.gz"
+
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "archive=$ARCHIVE" >> $GITHUB_OUTPUT
+
+        if [ ! -d "${{ inputs.source-dir }}" ]; then
+          echo "::error::Source directory '${{ inputs.source-dir }}' does not exist"
+          exit 1
+        fi
+
+        echo "Creating archive from ${{ inputs.source-dir }}..."
+        tar -czf "${ARCHIVE}" -C "${{ inputs.source-dir }}" .
+
+        S3_PREFIX="sites/${{ inputs.domain }}/"
+
+        echo "Uploading ${ARCHIVE}..."
+        aws s3 cp "${ARCHIVE}" \
+          "s3://${{ inputs.s3-bucket }}/${S3_PREFIX}${ARCHIVE}" \
+          --endpoint-url "${{ inputs.s3-endpoint }}"
+
+        echo "Activating ${VERSION}..."
+        echo "${ARCHIVE}" | aws s3 cp - \
+          "s3://${{ inputs.s3-bucket }}/${S3_PREFIX}CURRENT" \
+          --endpoint-url "${{ inputs.s3-endpoint }}"
+
+        echo "### Deployed ${{ inputs.domain }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version:** \`${VERSION}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **S3 Path:** \`s3://${{ inputs.s3-bucket }}/${S3_PREFIX}\`" >> $GITHUB_STEP_SUMMARY
+
+        rm -f "${ARCHIVE}"
