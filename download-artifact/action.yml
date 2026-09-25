@@ -1,0 +1,36 @@
+name: Download Local Artifact
+description: Download and verify artifacts from the current workflow run using GitHub OIDC.
+inputs:
+  server-url:
+    description: Artifact service URL. Defaults to SI_ARTIFACTS_URL.
+    required: false
+  audience:
+    description: OIDC audience. Defaults to the server URL without a trailing slash.
+    required: false
+  name:
+    description: Exact artifact name; omit to download all matching artifacts.
+    required: false
+  artifact-ids:
+    description: Comma-separated artifact UUIDs. Cannot be combined with name.
+    required: false
+  path:
+    description: Destination directory. Defaults to GITHUB_WORKSPACE.
+    required: false
+  pattern:
+    description: Artifact name glob, ignored when name is specified.
+    required: false
+  merge-multiple:
+    description: Extract multiple artifacts into one directory; overlapping files are rejected.
+    default: 'false'
+  repository:
+    description: Repository identity. Only the current repository is supported.
+    default: ${{ github.repository }}
+  run-id:
+    description: Workflow run ID. Only the current run is supported.
+    default: ${{ github.run_id }}
+outputs:
+  download-path:
+    description: Absolute destination directory.
+runs:
+  using: node24
+  main: dist/index.js
