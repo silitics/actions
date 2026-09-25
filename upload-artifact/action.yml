@@ -1,0 +1,40 @@
+name: Upload Local Artifact
+description: Upload an immutable ZIP archive to a local artifact service using GitHub OIDC.
+inputs:
+  server-url:
+    description: Artifact service URL. Defaults to SI_ARTIFACTS_URL.
+    required: false
+  audience:
+    description: OIDC audience. Defaults to the server URL without a trailing slash.
+    required: false
+  name:
+    description: Artifact name.
+    default: artifact
+  path:
+    description: Files, directories or newline-separated glob patterns, including exclusions.
+    required: true
+  if-no-files-found:
+    description: Behavior when no files match (warn, error or ignore).
+    default: warn
+  retention-days:
+    description: Retention in days; 0 uses the service default.
+    default: '0'
+  compression-level:
+    description: ZIP compression level from 0 to 9.
+    default: '6'
+  overwrite:
+    description: Atomically replace an artifact of the same name in this run attempt.
+    default: 'false'
+  include-hidden-files:
+    description: Include dotfiles and files inside hidden directories.
+    default: 'false'
+outputs:
+  artifact-id:
+    description: Service artifact UUID.
+  artifact-url:
+    description: Browser download URL requiring service sign-in.
+  artifact-digest:
+    description: SHA-256 checksum of the ZIP archive.
+runs:
+  using: node24
+  main: dist/index.js
