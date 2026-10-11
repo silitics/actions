@@ -5,6 +5,10 @@ inputs:
   domain:
     description: Domain name for the site (e.g., docs.silitics.com)
     required: true
+  path:
+    description: Relative site path (e.g., sidex); empty deploys the whole domain
+    required: false
+    default: ""
   source-dir:
     description: Directory containing the built site
     required: false
@@ -41,38 +45,9 @@ runs:
       env:
         AWS_ACCESS_KEY_ID: ${{ inputs.s3-access-key }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.s3-secret-key }}
-      run: |
-        set -euo pipefail
-
-        VERSION="v$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}"
-        ARCHIVE="${VERSION}.tar.gz"
-
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "archive=$ARCHIVE" >> $GITHUB_OUTPUT
-
-        if [ ! -d "${{ inputs.source-dir }}" ]; then
-          echo "::error::Source directory '${{ inputs.source-dir }}' does not exist"
-          exit 1
-        fi
-
-        echo "Creating archive from ${{ inputs.source-dir }}..."
-        tar -czf "${ARCHIVE}" -C "${{ inputs.source-dir }}" .
-
-        S3_PREFIX="sites/${{ inputs.domain }}/"
-
-        echo "Uploading ${ARCHIVE}..."
-        aws s3 cp "${ARCHIVE}" \
-          "s3://${{ inputs.s3-bucket }}/${S3_PREFIX}${ARCHIVE}" \
-          --endpoint-url "${{ inputs.s3-endpoint }}"
-
-        echo "Activating ${VERSION}..."
-        echo "${ARCHIVE}" | aws s3 cp - \
-          "s3://${{ inputs.s3-bucket }}/${S3_PREFIX}CURRENT" \
-          --endpoint-url "${{ inputs.s3-endpoint }}"
-
-        echo "### Deployed ${{ inputs.domain }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "- **Version:** \`${VERSION}\`" >> $GITHUB_STEP_SUMMARY
-        echo "- **S3 Path:** \`s3://${{ inputs.s3-bucket }}/${S3_PREFIX}\`" >> $GITHUB_STEP_SUMMARY
-
-        rm -f "${ARCHIVE}"
+        SITE_DOMAIN: ${{ inputs.domain }}
+        SITE_PATH: ${{ inputs.path }}
+        SITE_SOURCE_DIR: ${{ inputs.source-dir }}
+        SITE_BUCKET: ${{ inputs.s3-bucket }}
+        SITE_ENDPOINT: ${{ inputs.s3-endpoint }}
+      run: bash "$GITHUB_ACTION_PATH/deploy.sh"

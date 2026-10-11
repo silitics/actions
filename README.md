@@ -15,6 +15,28 @@ Reference an action's directory and pin it to a reviewed commit:
 | [upload-artifact](upload-artifact) | Upload files to si-artifacts using GitHub OIDC. |
 | [download-artifact](download-artifact) | Download and verify artifacts from the current workflow run. |
 
+## Static Site Deployment
+
+Use `deploy-site` with `domain` and `source-dir` to publish a whole domain.
+Set `path` to publish a subdirectory independently:
+
+```yaml
+- uses: silitics/actions/deploy-site@FULL_REVIEWED_COMMIT_SHA
+  with:
+    domain: oss.silitics.com
+    path: sidex
+    source-dir: www/dist
+    s3-access-key: ${{ vars.SILITICS_SITES_ACCESS_KEY }}
+    s3-secret-key: ${{ secrets.SILITICS_SITES_SECRET_KEY }}
+```
+
+This uploads the archive and its `CURRENT` pointer under
+`sites/oss.silitics.com/sidex/`. The archive contains the contents of `www/dist`
+directly. Configure hosting to sync that prefix and mount the content at
+`/sidex/`. Other archives and pointers under the domain remain independent.
+
+Run the deployment checks locally with `python3 deploy-site/test_deploy.py`.
+
 ## Artifact Storage
 
 The artifact actions connect to a separately operated si-artifacts service.
