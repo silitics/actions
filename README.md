@@ -35,7 +35,8 @@ This uploads the archive and its `CURRENT` pointer under
 directly. Configure hosting to sync that prefix and mount the content at
 `/sidex/`. Other archives and pointers under the domain remain independent.
 
-Run the deployment checks locally with `python3 deploy-site/test_deploy.py`.
+Install [mise](https://mise.jdx.dev/), run `mise install`, then run the deployment
+checks locally with `mise run test`.
 
 ## Artifact Storage
 

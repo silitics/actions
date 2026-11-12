@@ -1,0 +1,6 @@
+[tools]
+"python" = "3.13"
+
+[tasks."test"]
+description = "Test the site deployment action."
+run = "python3 deploy-site/test_deploy.py"
